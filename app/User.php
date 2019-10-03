@@ -31,7 +31,7 @@ class User extends Authenticatable
         return $this->hasMany(Micropost::class);
         
     }
-public function followings()
+    public function followings()
     {
         return $this->belongsToMany(User::class, 'user_follow', 'user_id', 'follow_id')->withTimestamps();
     }
@@ -40,6 +40,11 @@ public function followings()
     {
         return $this->belongsToMany(User::class, 'user_follow', 'follow_id', 'user_id')->withTimestamps();
     }
+    public function favorites()
+    {
+        return $this->belongsToMany(User::class, 'favorites', 'user_id', 'micropost_id')->withTimestamps();
+    }
+    
 public function follow($userId)
     {
         // 既にフォローしているかの確認
@@ -84,5 +89,51 @@ public function follow($userId)
             $follow_user_ids[] = $this->id;
             return Micropost::whereIn('user_id', $follow_user_ids);
         }
+        
+    public function favorite($userId)
+    {
+        // 既にfavしているかの確認
+        $exist = $this->have_add_fav($userId);
+        // 相手が自分自身ではないかの確認
+        $its_me = $this->id == $userId;
+    
+        if ($exist || $its_me) {
+            // 既にfavしていれば何もしない
+            return false;
+        } else {
+            // 未favであればfavする
+            $this->favorites()->attach($userId);
+            return true;
+        }
+    }
+    
+    public function unfavorite($userId)
+    {
+        // 既にfavしているかの確認
+        $exist = $this->have_add_fav($userId);
+        // 相手が自分自身ではないかの確認
+        $its_me = $this->id == $userId;
+    
+        if ($exist && !$its_me) {
+            // 既にfavしていればfavを外す
+            $this->favorites()->detach($userId);
+            return true;
+        } else {
+            // 未favであれば何もしない
+            return false;
+        }
+    }
+    
+    public function have_add_fav($userId)
+    {
+        return $this->favorites()->where('micropost_id', $userId)->exists();
+    }
+    public function feed_favorites()
+        {
+            $fav_user_ids = $this->favorites()->pluck('users.id')->toArray();
+            $fav_user_ids[] = $this->id;
+            return Micropost::whereIn('user_id', $fav_user_ids);
+        }
+    
 
 }
