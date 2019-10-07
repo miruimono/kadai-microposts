@@ -42,7 +42,7 @@ class User extends Authenticatable
     }
     public function favorites()
     {
-        return $this->belongsToMany(User::class, 'favorites', 'user_id', 'micropost_id')->withTimestamps();
+        return $this->belongsToMany(Micropost::class, 'favorites', 'user_id', 'micropost_id')->withTimestamps();
     }
     
 public function follow($userId)
@@ -90,33 +90,29 @@ public function follow($userId)
             return Micropost::whereIn('user_id', $follow_user_ids);
         }
         
-    public function favorite($userId)
+    public function favorite($fav_Id)
     {
         // 既にfavしているかの確認
-        $exist = $this->have_add_fav($userId);
-        // 相手が自分自身ではないかの確認
-        $its_me = $this->id == $userId;
+        $exist = $this->have_add_fav($fav_Id);
     
-        if ($exist || $its_me) {
+        if ($exist) {
             // 既にfavしていれば何もしない
             return false;
         } else {
             // 未favであればfavする
-            $this->favorites()->attach($userId);
+            $this->favorites()->attach($fav_Id);
             return true;
         }
     }
     
-    public function unfavorite($userId)
+    public function unfavorite($fav_Id)
     {
         // 既にfavしているかの確認
-        $exist = $this->have_add_fav($userId);
-        // 相手が自分自身ではないかの確認
-        $its_me = $this->id == $userId;
+        $exist = $this->have_add_fav($fav_Id);
     
-        if ($exist && !$its_me) {
+        if ($exist) {
             // 既にfavしていればfavを外す
-            $this->favorites()->detach($userId);
+            $this->favorites()->detach($fav_Id);
             return true;
         } else {
             // 未favであれば何もしない
@@ -124,9 +120,9 @@ public function follow($userId)
         }
     }
     
-    public function have_add_fav($userId)
+    public function have_add_fav($fav_Id)
     {
-        return $this->favorites()->where('micropost_id', $userId)->exists();
+        return $this->favorites()->where('micropost_id', $fav_Id)->exists();
     }
     public function feed_favorites()
         {
